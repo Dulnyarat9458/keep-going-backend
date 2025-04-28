@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	database "keep_going/databases"
 	"keep_going/models"
 	"keep_going/validators"
@@ -33,9 +32,6 @@ func SignUp(c *gin.Context) {
 
 	hashedPassword, err_hash := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err_hash != nil {
-
-		fmt.Println("password error")
-		fmt.Print(err_hash)
 
 		allErrors = append(allErrors, map[string]string{
 			"field": "json",

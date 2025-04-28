@@ -42,7 +42,7 @@ func ParseDatabaseError(err error) []map[string]string {
 	errMsg := err.Error()
 
 	if err == nil {
-		return errors // error ว่าง ไม่ต้องทำอะไร
+		return errors
 	}
 
 	if strings.Contains(errMsg, "duplicate key value violates unique constraint") {
@@ -53,7 +53,6 @@ func ParseDatabaseError(err error) []map[string]string {
 			})
 		}
 	} else {
-		// unknown db error
 		errors = append(errors, map[string]string{
 			"field": "database",
 			"error": errMsg,
