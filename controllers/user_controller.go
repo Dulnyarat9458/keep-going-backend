@@ -29,6 +29,8 @@ func SignUp(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, allErrors)
 		return
 	}
+	
+	inputErrors := validators.ValidateUserInput(input)
 
 	hashedPassword, err_hash := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err_hash != nil {
@@ -43,7 +45,6 @@ func SignUp(c *gin.Context) {
 
 	input.Password = string(hashedPassword)
 
-	inputErrors := validators.ValidateUserInput(input)
 	allErrors = append(allErrors, inputErrors...)
 
 	if len(allErrors) == 0 {

@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"fmt"
 	"keep_going/models"
 	"net/mail"
 	"strings"
@@ -35,7 +36,11 @@ func ValidateUserInput(input models.User) []map[string]string {
 			})
 		}
 	}
+
 	if len(input.Password) < 8 {
+
+		fmt.Println("condition password")
+
 		errors = append(errors, map[string]string{
 			"field": "password",
 			"error": "Password must be at least 8 characters long",
