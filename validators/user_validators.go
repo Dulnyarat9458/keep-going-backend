@@ -2,6 +2,7 @@ package validators
 
 import (
 	"keep_going/models"
+	"net/mail"
 	"strings"
 )
 
@@ -25,6 +26,14 @@ func ValidateUserInput(input models.User) []map[string]string {
 			"field": "email",
 			"error": "Email is required",
 		})
+	} else {
+		_, err := mail.ParseAddress(input.Email)
+		if err != nil {
+			errors = append(errors, map[string]string{
+				"field": "email",
+				"error": "Invalid email format",
+			})
+		}
 	}
 	if len(input.Password) < 8 {
 		errors = append(errors, map[string]string{
