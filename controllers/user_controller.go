@@ -13,3 +13,21 @@ func GetUsers(c *gin.Context) {
 	database.DB.Find(&users)
 	c.JSON(http.StatusOK, users)
 }
+
+func SignUp(c *gin.Context) {
+	var input models.User
+
+	err := c.ShouldBindJSON(&input)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	database.DB.Create(&input)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "User registered successfully!",
+		"username": input.Email,
+	})
+}
