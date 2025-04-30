@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ValidateUserInput(input models.User) []map[string]string {
+func ValidateUserSignUpInput(input models.User) []map[string]string {
 	var errors []map[string]string
 
 	if input.FirstName == "" {
@@ -50,7 +50,7 @@ func ValidateUserInput(input models.User) []map[string]string {
 	return errors
 }
 
-func ParseDatabaseError(err error) []map[string]string {
+func ParseDatabaseUserSignUpError(err error) []map[string]string {
 	var errors []map[string]string
 
 	errMsg := err.Error()
