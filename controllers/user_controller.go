@@ -11,13 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Test(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": "successfully!",
-	})
-	return
-}
-
 func SignIn(c *gin.Context) {
 	var user models.User
 	var allErrors []map[string]string

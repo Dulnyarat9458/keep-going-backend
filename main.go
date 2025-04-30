@@ -19,8 +19,8 @@ func main() {
 	r.POST("/signin", controllers.SignIn)
 	r.POST("/signout", controllers.SignOut)
 
+	r.GET("/habits", middlewares.Authenticate(), controllers.HabitList)
 	r.POST("/habits", middlewares.Authenticate(), controllers.AddNewHabit)
-	r.GET("/test", middlewares.Authenticate(), controllers.Test)
 
 	r.Run()
 }

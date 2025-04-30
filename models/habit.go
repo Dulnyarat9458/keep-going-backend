@@ -9,7 +9,7 @@ import (
 type HabitTracker struct {
 	gorm.Model
 	UserID        uint      `gorm:"not null"`
-	Title         string    `gorm:"type:varchar(255);not null"`
-	StartDate     time.Time `gorm:"not null"`
-	LastResetDate time.Time `gorm:"not null"`
+	Title         string    `json:"title" gorm:"type:varchar(255);not null"`
+	StartDate     time.Time `json:"start_date" gorm:"not null"`
+	LastResetDate time.Time `json:"last_reset_date" gorm:"not null"`
 }

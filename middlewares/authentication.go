@@ -11,9 +11,7 @@ import (
 
 func Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		var user models.User
-		err := c.ShouldBindJSON(&user)
 
 		token, err := c.Cookie("access_token")
 		if err != nil || token == "" {
