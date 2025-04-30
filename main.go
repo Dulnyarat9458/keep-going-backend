@@ -14,7 +14,6 @@ func main() {
 		c.JSON(200, gin.H{"message": "Hello from Gin! love"})
 	})
 
-	r.GET("/users", controllers.GetUsers)
 	r.POST("/signup", controllers.SignUp)
 	r.POST("/signin", controllers.SignIn)
 

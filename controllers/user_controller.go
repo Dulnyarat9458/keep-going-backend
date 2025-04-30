@@ -11,12 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func GetUsers(c *gin.Context) {
-	var users []models.User
-	database.DB.Find(&users)
-	c.JSON(http.StatusOK, users)
-}
-
 func SignIn(c *gin.Context) {
 	var user models.User
 	var allErrors []map[string]string
