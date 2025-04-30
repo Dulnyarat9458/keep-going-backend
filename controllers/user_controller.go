@@ -1,15 +1,22 @@
 package controllers
 
 import (
-	database "keep_going/databases"
+	"keep_going/databases"
 	"keep_going/models"
-	jwt "keep_going/utils"
+	"keep_going/utils"
 	"keep_going/validators"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func Test(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "successfully!",
+	})
+	return
+}
 
 func SignIn(c *gin.Context) {
 	var user models.User
@@ -26,7 +33,7 @@ func SignIn(c *gin.Context) {
 
 	input_password := user.Password
 
-	result := database.DB.Where("email = ?", user.Email).First(&user)
+	result := databases.DB.Where("email = ?", user.Email).First(&user)
 
 	if result.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -44,7 +51,7 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	jwt, err := jwt.GenerateJWT(user.Email)
+	jwt, err := utils.GenerateJWT(user.Email)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "something went wrong",
@@ -52,10 +59,15 @@ func SignIn(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "OK",
-		"token":   jwt,
-	})
+	c.SetCookie(
+		"access_token", // name
+		jwt,            // value
+		3600*24,        // maxAge in seconds (1 day)
+		"/",            // path
+		"",             // domain ("" = current domain)
+		true,           // secure (true = only HTTPS)
+		true,           // httpOnly
+	)
 	return
 
 }
@@ -93,7 +105,7 @@ func SignUp(c *gin.Context) {
 
 	if len(allErrors) == 0 {
 		user.Role = "user"
-		result := database.DB.Create(&user)
+		result := databases.DB.Create(&user)
 
 		if result != nil && result.Error != nil {
 			dbErrors := validators.ParseDatabaseUserSignUpError(result.Error)

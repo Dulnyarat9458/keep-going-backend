@@ -2,13 +2,14 @@ package main
 
 import (
 	"keep_going/controllers"
-	database "keep_going/databases"
+	"keep_going/databases"
+	"keep_going/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	database.ConnectDatabase()
+	databases.ConnectDatabase()
 	r := gin.Default()
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Hello from Gin! love"})
@@ -16,6 +17,7 @@ func main() {
 
 	r.POST("/signup", controllers.SignUp)
 	r.POST("/signin", controllers.SignIn)
+	r.GET("/test", middlewares.Authenticate(), controllers.Test)
 
 	r.Run()
 }
