@@ -27,6 +27,7 @@ func ConnectDatabase() {
 	}
 
 	database.AutoMigrate(&models.User{})
+	database.AutoMigrate(&models.HabitTracker{})
 
 	DB = database
 }
