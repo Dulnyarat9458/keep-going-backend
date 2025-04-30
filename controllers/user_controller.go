@@ -72,6 +72,11 @@ func SignIn(c *gin.Context) {
 
 }
 
+func SignOut(c *gin.Context) {
+	c.SetCookie("access_token", "", -1, "/", "", true, true)
+	c.JSON(200, gin.H{"message": "logged out"})
+}
+
 func SignUp(c *gin.Context) {
 	var user models.User
 	var allErrors []map[string]string
