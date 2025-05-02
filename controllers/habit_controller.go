@@ -11,12 +11,12 @@ import (
 )
 
 func HabitList(c *gin.Context) {
-	var habit_trackers []models.HabitTracker
+	var habitTrackers []models.HabitTracker
 
 	if u, exists := c.Get("user"); exists {
 		user := u.(models.User)
 
-		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID}).Find(&habit_trackers)
+		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID}).Find(&habitTrackers)
 
 		if result.Error != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -26,7 +26,7 @@ func HabitList(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"message": "ok", "data": habit_trackers,
+			"message": "ok", "data": habitTrackers,
 		})
 		return
 
@@ -41,9 +41,9 @@ func HabitList(c *gin.Context) {
 func AddNewHabit(c *gin.Context) {
 	if u, exists := c.Get("user"); exists {
 		user := u.(models.User)
-		var habit_tracker models.HabitTracker
+		var habitTrackers models.HabitTracker
 		var allErrors []map[string]string
-		err := c.ShouldBindJSON(&habit_tracker)
+		err := c.ShouldBindJSON(&habitTrackers)
 
 		if err != nil {
 			allErrors = append(allErrors, map[string]string{
@@ -54,11 +54,11 @@ func AddNewHabit(c *gin.Context) {
 			return
 		}
 
-		inputErrors := validators.ValidateHabitInput(habit_tracker)
+		inputErrors := validators.ValidateHabitInput(habitTrackers)
 
-		habit_tracker.UserID = user.ID
-		habit_tracker.LastResetDate = habit_tracker.StartDate
-		result := databases.DB.Create(&habit_tracker)
+		habitTrackers.UserID = user.ID
+		habitTrackers.LastResetDate = habitTrackers.StartDate
+		result := databases.DB.Create(&habitTrackers)
 
 		allErrors = append(allErrors, inputErrors...)
 

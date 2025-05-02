@@ -32,7 +32,7 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	input_password := user.Password
+	inputPassword := user.Password
 
 	result := databases.DB.Where("email = ?", user.Email).First(&user)
 
@@ -44,7 +44,7 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input_password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(inputPassword)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "invalid credentials",
 			"field":   "email",
@@ -95,8 +95,8 @@ func SignUp(c *gin.Context) {
 
 	inputErrors := validators.ValidateUserSignUpInput(user)
 
-	hashedPassword, err_hash := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err_hash != nil {
+	hashedPassword, errHash := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if errHash != nil {
 
 		allErrors = append(allErrors, map[string]string{
 			"field": "json",
@@ -135,7 +135,7 @@ func SignUp(c *gin.Context) {
 func ForgetPassword(c *gin.Context) {
 
 	var user models.User
-	var reset_token models.ResetToken
+	var resetToken models.ResetToken
 
 	err := c.ShouldBindJSON(&user)
 
@@ -167,11 +167,11 @@ func ForgetPassword(c *gin.Context) {
 		return
 	}
 
-	reset_token.UserID = user.ID
-	reset_token.Token = token
-	reset_token.ExpiresAt = time.Now().Add(30 * time.Minute)
+	resetToken.UserID = user.ID
+	resetToken.Token = token
+	resetToken.ExpiresAt = time.Now().Add(30 * time.Minute)
 
-	result_token := databases.DB.Create(&reset_token)
+	result_token := databases.DB.Create(&resetToken)
 
 	if result_token.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -192,15 +192,15 @@ func ForgetPassword(c *gin.Context) {
 		log.Fatal("Execute template error:", err)
 	}
 
-	mail_sender := os.Getenv("MAIL_SENDER")
-	mail_host := os.Getenv("MAIL_HOST")
-	mail_port, err := strconv.Atoi(os.Getenv("MAIL_PORT"))
-	mail_username := os.Getenv("MAIL_USERNAME")
-	mail_password := os.Getenv("MAIL_PASSWORD")
+	mailSender := os.Getenv("MAIL_SENDER")
+	mailHost := os.Getenv("MAIL_HOST")
+	mailPort, err := strconv.Atoi(os.Getenv("MAIL_PORT"))
+	mailUsername := os.Getenv("MAIL_USERNAME")
+	mailPassword := os.Getenv("MAIL_PASSWORD")
 
 	m := mail.NewMessage()
 
-	m.SetHeader("From", mail_sender)
+	m.SetHeader("From", mailSender)
 	m.SetHeader("To", user.Email)
 	m.SetHeader("Subject", "Reset Password")
 	m.SetBody("text/html", body.String())
@@ -210,10 +210,10 @@ func ForgetPassword(c *gin.Context) {
 	}
 
 	d := mail.NewDialer(
-		mail_host,
-		mail_port,
-		mail_username,
-		mail_password,
+		mailHost,
+		mailPort,
+		mailUsername,
+		mailPassword,
 	)
 
 	if err := d.DialAndSend(m); err != nil {
@@ -226,7 +226,7 @@ func ForgetPassword(c *gin.Context) {
 
 func ResetPassword(c *gin.Context) {
 	var user models.User
-	var reset_token models.ResetToken
+	var resetToken models.ResetToken
 
 	type ResetPasswordInput struct {
 		Token    string `json:"token"`
@@ -241,9 +241,7 @@ func ResetPassword(c *gin.Context) {
 
 	tokenStr := input.Token
 
-	fmt.Println("reset_token", reset_token)
-
-	resultToken := databases.DB.Where("token = ?", tokenStr).First(&reset_token)
+	resultToken := databases.DB.Where("token = ?", tokenStr).First(&resetToken)
 
 	if resultToken.Error != nil {
 		c.JSON(400, gin.H{"error": "invalid token"})
@@ -252,15 +250,15 @@ func ResetPassword(c *gin.Context) {
 
 	inputPassword := input.Password
 
-	hashedPassword, err_hash := bcrypt.GenerateFromPassword([]byte(inputPassword), bcrypt.DefaultCost)
-	if err_hash != nil {
+	hashedPassword, errHash := bcrypt.GenerateFromPassword([]byte(inputPassword), bcrypt.DefaultCost)
+	if errHash != nil {
 		c.JSON(400, gin.H{"message": "BAD"})
 		return
 	}
 
-	databases.DB.First(&user, reset_token.UserID)
+	databases.DB.First(&user, resetToken.UserID)
 	user.Password = string(hashedPassword)
-	databases.DB.Unscoped().Delete(&reset_token)
+	databases.DB.Unscoped().Delete(&resetToken)
 	databases.DB.Save(&user)
 
 	c.JSON(200, gin.H{"message": "RESET COMPLETE"})
