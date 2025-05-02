@@ -6,9 +6,12 @@ import (
 	"keep_going/utils"
 	"keep_going/validators"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/mail.v2"
 )
 
 func SignIn(c *gin.Context) {
@@ -68,6 +71,7 @@ func SignIn(c *gin.Context) {
 func SignOut(c *gin.Context) {
 	c.SetCookie("access_token", "", -1, "/", "", true, true)
 	c.JSON(200, gin.H{"message": "logged out"})
+	return
 }
 
 func SignUp(c *gin.Context) {
@@ -120,4 +124,50 @@ func SignUp(c *gin.Context) {
 		"message": "User registered successfully!",
 		"email":   user.Email,
 	})
+	return
+}
+
+func ForgetPassword(c *gin.Context) {
+
+	var user models.User
+	err := c.ShouldBindJSON(&user)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "something went wrong",
+			"field":   "non_field",
+		})
+		return
+	}
+
+	mail_sender := os.Getenv("MAIL_SENDER")
+	mail_host := os.Getenv("MAIL_HOST")
+	mail_port, err := strconv.Atoi(os.Getenv("MAIL_PORT"))
+	mail_username := os.Getenv("MAIL_USERNAME")
+	mail_password := os.Getenv("MAIL_PASSWORD")
+
+	m := mail.NewMessage()
+
+	m.SetHeader("From", mail_sender)
+	m.SetHeader("To", user.Email)
+	m.SetHeader("Subject", "Reset Password")
+	m.SetBody("text/plain", "This is a test email sent using gomail and MailHog.")
+
+	if err != nil {
+		panic(err)
+	}
+
+	d := mail.NewDialer(
+		mail_host,
+		mail_port,
+		mail_username,
+		mail_password,
+	)
+
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
+	}
+
+	c.JSON(200, gin.H{"message": "OK"})
+	return
 }
