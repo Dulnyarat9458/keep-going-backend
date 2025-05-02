@@ -1,13 +1,18 @@
 package controllers
 
 import (
+	"bytes"
+	"fmt"
+	"html/template"
 	"keep_going/databases"
 	"keep_going/models"
 	"keep_going/utils"
 	"keep_going/validators"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -130,6 +135,8 @@ func SignUp(c *gin.Context) {
 func ForgetPassword(c *gin.Context) {
 
 	var user models.User
+	var reset_token models.ResetToken
+
 	err := c.ShouldBindJSON(&user)
 
 	if err != nil {
@@ -138,6 +145,51 @@ func ForgetPassword(c *gin.Context) {
 			"field":   "non_field",
 		})
 		return
+	}
+
+	tmpl, err := template.ParseFiles("templates/reset_password.html")
+	if err != nil {
+		log.Fatal("Template error:", err)
+	}
+
+	token, err := utils.GenerateResetToken()
+	if err != nil {
+		log.Fatal("token error:", err)
+	}
+
+	result_user := databases.DB.Where("email = ?", user.Email).First(&user)
+
+	if result_user.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid email",
+			"field":   "email",
+		})
+		return
+	}
+
+	reset_token.UserID = user.ID
+	reset_token.Token = token
+	reset_token.ExpiresAt = time.Now().Add(30 * time.Minute)
+
+	result_token := databases.DB.Create(&reset_token)
+
+	if result_token.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "something wrong with token save",
+			"field":   "non_field",
+		})
+		return
+	}
+
+	data := struct {
+		ResetLink string
+	}{
+		ResetLink: fmt.Sprintf("https://example_frontend.com/reset?token=%s", token),
+	}
+
+	var body bytes.Buffer
+	if err := tmpl.Execute(&body, data); err != nil {
+		log.Fatal("Execute template error:", err)
 	}
 
 	mail_sender := os.Getenv("MAIL_SENDER")
@@ -151,7 +203,7 @@ func ForgetPassword(c *gin.Context) {
 	m.SetHeader("From", mail_sender)
 	m.SetHeader("To", user.Email)
 	m.SetHeader("Subject", "Reset Password")
-	m.SetBody("text/plain", "This is a test email sent using gomail and MailHog.")
+	m.SetBody("text/html", body.String())
 
 	if err != nil {
 		panic(err)
@@ -169,5 +221,48 @@ func ForgetPassword(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"message": "OK"})
+	return
+}
+
+func ResetPassword(c *gin.Context) {
+	var user models.User
+	var reset_token models.ResetToken
+
+	type ResetPasswordInput struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
+
+	var input ResetPasswordInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, gin.H{"error": "invalid input"})
+		return
+	}
+
+	tokenStr := input.Token
+
+	fmt.Println("reset_token", reset_token)
+
+	resultToken := databases.DB.Where("token = ?", tokenStr).First(&reset_token)
+
+	if resultToken.Error != nil {
+		c.JSON(400, gin.H{"error": "invalid token"})
+		return
+	}
+
+	inputPassword := input.Password
+
+	hashedPassword, err_hash := bcrypt.GenerateFromPassword([]byte(inputPassword), bcrypt.DefaultCost)
+	if err_hash != nil {
+		c.JSON(400, gin.H{"message": "BAD"})
+		return
+	}
+
+	databases.DB.First(&user, reset_token.UserID)
+	user.Password = string(hashedPassword)
+	databases.DB.Unscoped().Delete(&reset_token)
+	databases.DB.Save(&user)
+
+	c.JSON(200, gin.H{"message": "RESET COMPLETE"})
 	return
 }
