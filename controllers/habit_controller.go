@@ -6,8 +6,10 @@ import (
 	"keep_going/models"
 	"keep_going/validators"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func HabitList(c *gin.Context) {
@@ -27,6 +29,46 @@ func HabitList(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{
 			"message": "ok", "data": habitTrackers,
+		})
+		return
+
+	}
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": "something went wrong",
+	})
+	return
+
+}
+
+func HabitDetail(c *gin.Context) {
+	var habitTracker models.HabitTracker
+	habitIdStr := c.Param("id")
+	habitIdUint64, err := strconv.ParseUint(habitIdStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid habit ID"})
+		return
+	}
+
+	if u, exists := c.Get("user"); exists {
+		habitId := uint(habitIdUint64)
+		user := u.(models.User)
+
+		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID, Model: gorm.Model{
+			ID: habitId,
+		}}).First(&habitTracker)
+
+		fmt.Println(result.Error)
+
+		if result.Error != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "something went wrong",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "ok",
+			"data":    habitTracker,
 		})
 		return
 

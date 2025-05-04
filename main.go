@@ -22,6 +22,7 @@ func main() {
 	r.POST("/reset-password", controllers.ResetPassword)
 
 	r.GET("/habits", middlewares.Authenticate(), controllers.HabitList)
+	r.GET("/habits/:id", middlewares.Authenticate(), controllers.HabitDetail)
 	r.POST("/habits", middlewares.Authenticate(), controllers.AddNewHabit)
 
 	r.Run()
