@@ -7,6 +7,7 @@ import (
 	"keep_going/validators"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -124,4 +125,63 @@ func AddNewHabit(c *gin.Context) {
 		})
 		return
 	}
+}
+
+func HabitEdit(c *gin.Context) {
+	var habitTracker models.HabitTracker
+	habitIdStr := c.Param("id")
+	habitIdUint64, err := strconv.ParseUint(habitIdStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid habit ID"})
+		return
+	}
+
+	if u, exists := c.Get("user"); exists {
+		habitId := uint(habitIdUint64)
+		user := u.(models.User)
+
+		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID, Model: gorm.Model{
+			ID: habitId,
+		}}).First(&habitTracker)
+
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "habit not found"})
+			return
+		}
+
+		var input struct {
+			Title         *string    `json:"title"`
+			StartDate     *time.Time `json:"start_date"`
+			LastResetDate *time.Time `json:"last_reset_date"`
+		}
+
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON input"})
+			return
+		}
+
+		if input.Title != nil {
+			habitTracker.Title = *input.Title
+		}
+		if input.StartDate != nil {
+			habitTracker.StartDate = *input.StartDate
+		}
+		if input.LastResetDate != nil {
+			habitTracker.LastResetDate = *input.LastResetDate
+		}
+
+		databases.DB.Save(&habitTracker)
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "habit updated",
+			"data":    habitTracker,
+		})
+		return
+
+	}
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": "something went wrong",
+	})
+	return
+
 }

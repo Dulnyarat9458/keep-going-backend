@@ -23,6 +23,7 @@ func main() {
 
 	r.GET("/habits", middlewares.Authenticate(), controllers.HabitList)
 	r.GET("/habits/:id", middlewares.Authenticate(), controllers.HabitDetail)
+	r.PUT("/habits/:id", middlewares.Authenticate(), controllers.HabitEdit)
 	r.POST("/habits", middlewares.Authenticate(), controllers.AddNewHabit)
 
 	r.Run()
