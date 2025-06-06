@@ -2,12 +2,14 @@ package controllers
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"keep_going/databases"
 	"keep_going/models"
 	"keep_going/utils"
 	"keep_going/validators"
+
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +17,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mail.v2"
 )
@@ -81,47 +84,68 @@ func SignOut(c *gin.Context) {
 
 func SignUp(c *gin.Context) {
 	var user models.User
-	var allErrors []map[string]string
-	err := c.ShouldBindJSON(&user)
 
-	if err != nil {
-		allErrors = append(allErrors, map[string]string{
-			"field": "json",
-			"error": err.Error(),
-		})
-		c.JSON(http.StatusBadRequest, allErrors)
+	var input validators.RegisterInput
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		var ve validator.ValidationErrors
+		var out []map[string]string
+
+		if errors.As(err, &ve) {
+			for _, fe := range ve {
+				out = append(out, map[string]string{
+					"field": utils.ToSnakeCase(fe.Field()),
+					"error": utils.ValidationMessage(fe),
+				})
+			}
+		} else {
+			out = append(out, map[string]string{
+				"field": "json",
+				"error": err.Error(),
+			})
+		}
+
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
-
-	inputErrors := validators.ValidateUserSignUpInput(user)
 
 	hashedPassword, errHash := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if errHash != nil {
-
-		allErrors = append(allErrors, map[string]string{
-			"field": "json",
-			"error": "Failed to encrypt password",
+		c.JSON(http.StatusInternalServerError, []map[string]string{
+			{
+				"field": "json",
+				"error": "Failed to encrypt password",
+			},
 		})
-		c.JSON(http.StatusInternalServerError, allErrors)
 		return
 	}
 
-	user.Password = string(hashedPassword)
+	var existingUser models.User
 
-	allErrors = append(allErrors, inputErrors...)
-
-	if len(allErrors) == 0 {
-		user.Role = "user"
-		result := databases.DB.Create(&user)
-
-		if result != nil && result.Error != nil {
-			dbErrors := validators.ParseDatabaseUserSignUpError(result.Error)
-			allErrors = append(allErrors, dbErrors...)
-		}
+	if err := databases.DB.Where("email = ?", input.Email).First(&existingUser).Error; err == nil {
+		c.JSON(http.StatusBadRequest, []map[string]string{
+			{
+				"field": "email",
+				"error": "Email already exists",
+			},
+		})
+		return
 	}
 
-	if len(allErrors) > 0 {
-		c.JSON(http.StatusBadRequest, allErrors)
+	user.FirstName = input.FirstName
+	user.LastName = input.LastName
+	user.Email = input.Email
+	user.Password = string(hashedPassword)
+	user.Role = "user"
+	result := databases.DB.Create(&user)
+
+	if result != nil && result.Error != nil {
+		c.JSON(http.StatusBadRequest, []map[string]string{
+			{
+				"field": "database",
+				"error": result.Error.Error(),
+			},
+		})
 		return
 	}
 
