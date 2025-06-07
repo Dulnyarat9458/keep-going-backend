@@ -37,16 +37,16 @@ func SignIn(c *gin.Context) {
 
 	if result.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "invalid credentials",
-			"field":   "email",
+			"error": "invalid_credentials",
+			"field": "email",
 		})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(inputPassword)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "invalid credentials",
-			"field":   "email",
+			"error": "invalid_credentials",
+			"field": "email",
 		})
 		return
 	}
@@ -54,8 +54,8 @@ func SignIn(c *gin.Context) {
 	jwt, err := utils.GenerateJWT(user.Email)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "something went wrong",
-			"field":   "non_field",
+			"error": "something went wrong",
+			"field": "non_field",
 		})
 	}
 
@@ -102,7 +102,7 @@ func SignUp(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, []map[string]string{
 			{
 				"field": "email",
-				"error": "Email already exists",
+				"error": "exists_email",
 			},
 		})
 		return
@@ -157,8 +157,8 @@ func ForgetPassword(c *gin.Context) {
 
 	if result_user.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "invalid email",
-			"field":   "email",
+			"error": "invalid_email",
+			"field": "email",
 		})
 		return
 	}
@@ -171,8 +171,8 @@ func ForgetPassword(c *gin.Context) {
 
 	if result_token.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "something wrong with token save",
-			"field":   "non_field",
+			"error": "fail",
+			"field": "non_field",
 		})
 		return
 	}
@@ -236,7 +236,7 @@ func ResetPassword(c *gin.Context) {
 	resultToken := databases.DB.Where("token = ?", tokenStr).First(&resetToken)
 
 	if resultToken.Error != nil {
-		c.JSON(400, gin.H{"error": "invalid token"})
+		c.JSON(400, gin.H{"error": "invalid_token"})
 		return
 	}
 
@@ -244,7 +244,7 @@ func ResetPassword(c *gin.Context) {
 
 	hashedPassword, errHash := bcrypt.GenerateFromPassword([]byte(inputPassword), bcrypt.DefaultCost)
 	if errHash != nil {
-		c.JSON(400, gin.H{"message": "BAD"})
+		c.JSON(400, gin.H{"error": "fail"})
 		return
 	}
 

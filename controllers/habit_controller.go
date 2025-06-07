@@ -23,7 +23,7 @@ func HabitList(c *gin.Context) {
 
 		if result.Error != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "something went wrong",
+				"error": "fail",
 			})
 			return
 		}
@@ -35,7 +35,7 @@ func HabitList(c *gin.Context) {
 
 	}
 	c.JSON(http.StatusBadRequest, gin.H{
-		"error": "something went wrong",
+		"error": "fail",
 	})
 	return
 }
@@ -45,7 +45,7 @@ func HabitDetail(c *gin.Context) {
 	habitIdStr := c.Param("id")
 	habitIdUint64, err := strconv.ParseUint(habitIdStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid habit ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_id"})
 		return
 	}
 
@@ -59,7 +59,7 @@ func HabitDetail(c *gin.Context) {
 
 		if result.Error != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Habit not found",
+				"error": "not_found",
 			})
 			return
 		}
@@ -72,7 +72,7 @@ func HabitDetail(c *gin.Context) {
 
 	}
 	c.JSON(http.StatusBadRequest, gin.H{
-		"error": "something went wrong",
+		"error": "fail",
 	})
 	return
 }
@@ -98,8 +98,8 @@ func AddNewHabit(c *gin.Context) {
 		if result.Error != nil {
 			fmt.Println(result.Error)
 			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "something went wrong",
-				"field":   "non_field",
+				"error": "fail",
+				"field": "non_field",
 			})
 			return
 		}
@@ -132,7 +132,7 @@ func HabitEdit(c *gin.Context) {
 		}).First(&habitTracker)
 
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "habit not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
 			return
 		}
 
@@ -157,7 +157,7 @@ func HabitEdit(c *gin.Context) {
 
 	}
 	c.JSON(http.StatusBadRequest, gin.H{
-		"error": "something went wrong",
+		"error": "fail",
 	})
 	return
 }
@@ -180,7 +180,7 @@ func HabitDelete(c *gin.Context) {
 		}).Delete(&habitTracker)
 
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "habit not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
 			return
 		}
 
