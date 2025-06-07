@@ -24,20 +24,33 @@ import (
 
 func SignIn(c *gin.Context) {
 	var user models.User
-	var allErrors []map[string]string
-	err := c.ShouldBindJSON(&user)
-	if err != nil {
-		allErrors = append(allErrors, map[string]string{
-			"field": "json",
-			"error": err.Error(),
-		})
-		c.JSON(http.StatusBadRequest, allErrors)
+	var input validators.SignInInput
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		var ve validator.ValidationErrors
+		var out []map[string]string
+
+		if errors.As(err, &ve) {
+			for _, fe := range ve {
+				out = append(out, map[string]string{
+					"field": utils.ToSnakeCase(fe.Field()),
+					"error": utils.ValidationMessage(fe),
+				})
+			}
+		} else {
+			out = append(out, map[string]string{
+				"field": "json",
+				"error": err.Error(),
+			})
+		}
+
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
-	inputPassword := user.Password
+	inputPassword := input.Password
 
-	result := databases.DB.Where("email = ?", user.Email).First(&user)
+	result := databases.DB.Where("email = ?", input.Email).First(&user)
 
 	if result.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -73,7 +86,6 @@ func SignIn(c *gin.Context) {
 		true,           // httpOnly
 	)
 	return
-
 }
 
 func SignOut(c *gin.Context) {
@@ -83,9 +95,7 @@ func SignOut(c *gin.Context) {
 }
 
 func SignUp(c *gin.Context) {
-	var user models.User
-
-	var input validators.RegisterInput
+	var input validators.SignUpInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -109,7 +119,9 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, errHash := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	fmt.Println(input.Password)
+
+	hashedPassword, errHash := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if errHash != nil {
 		c.JSON(http.StatusInternalServerError, []map[string]string{
 			{
@@ -132,12 +144,12 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	user.FirstName = input.FirstName
-	user.LastName = input.LastName
-	user.Email = input.Email
-	user.Password = string(hashedPassword)
-	user.Role = "user"
-	result := databases.DB.Create(&user)
+	existingUser.FirstName = input.FirstName
+	existingUser.LastName = input.LastName
+	existingUser.Email = input.Email
+	existingUser.Password = string(hashedPassword)
+	existingUser.Role = "user"
+	result := databases.DB.Create(&existingUser)
 
 	if result != nil && result.Error != nil {
 		c.JSON(http.StatusBadRequest, []map[string]string{
@@ -151,23 +163,36 @@ func SignUp(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "User registered successfully!",
-		"email":   user.Email,
+		"email":   existingUser.Email,
 	})
 	return
 }
 
 func ForgetPassword(c *gin.Context) {
+	var input validators.ForgetPasswordInput
 
 	var user models.User
 	var resetToken models.ResetToken
 
-	err := c.ShouldBindJSON(&user)
+	if err := c.ShouldBindJSON(&input); err != nil {
+		var ve validator.ValidationErrors
+		var out []map[string]string
 
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "something went wrong",
-			"field":   "non_field",
-		})
+		if errors.As(err, &ve) {
+			for _, fe := range ve {
+				out = append(out, map[string]string{
+					"field": utils.ToSnakeCase(fe.Field()),
+					"error": utils.ValidationMessage(fe),
+				})
+			}
+		} else {
+			out = append(out, map[string]string{
+				"field": "json",
+				"error": err.Error(),
+			})
+		}
+
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
@@ -181,7 +206,7 @@ func ForgetPassword(c *gin.Context) {
 		log.Fatal("token error:", err)
 	}
 
-	result_user := databases.DB.Where("email = ?", user.Email).First(&user)
+	result_user := databases.DB.Where("email = ?", input.Email).First(&user)
 
 	if result_user.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -204,12 +229,15 @@ func ForgetPassword(c *gin.Context) {
 		})
 		return
 	}
+	frontendWeb := os.Getenv("FRONTEND_WEB")
 
 	data := struct {
 		ResetLink string
 	}{
-		ResetLink: fmt.Sprintf("https://example_frontend.com/reset?token=%s", token),
+		ResetLink: fmt.Sprintf("%s/reset?token=%s", frontendWeb, token),
 	}
+
+	fmt.Println(fmt.Sprintf("%s/reset?token=%s", frontendWeb, token))
 
 	var body bytes.Buffer
 	if err := tmpl.Execute(&body, data); err != nil {
@@ -225,7 +253,7 @@ func ForgetPassword(c *gin.Context) {
 	m := mail.NewMessage()
 
 	m.SetHeader("From", mailSender)
-	m.SetHeader("To", user.Email)
+	m.SetHeader("To", input.Email)
 	m.SetHeader("Subject", "Reset Password")
 	m.SetBody("text/html", body.String())
 
@@ -251,15 +279,27 @@ func ForgetPassword(c *gin.Context) {
 func ResetPassword(c *gin.Context) {
 	var user models.User
 	var resetToken models.ResetToken
+	var input validators.ResetPasswordInput
 
-	type ResetPasswordInput struct {
-		Token    string `json:"token"`
-		Password string `json:"password"`
-	}
-
-	var input ResetPasswordInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, gin.H{"error": "invalid input"})
+		var ve validator.ValidationErrors
+		var out []map[string]string
+
+		if errors.As(err, &ve) {
+			for _, fe := range ve {
+				out = append(out, map[string]string{
+					"field": utils.ToSnakeCase(fe.Field()),
+					"error": utils.ValidationMessage(fe),
+				})
+			}
+		} else {
+			out = append(out, map[string]string{
+				"field": "json",
+				"error": err.Error(),
+			})
+		}
+
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
