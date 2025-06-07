@@ -2,14 +2,14 @@ package utils
 
 import "github.com/go-playground/validator/v10"
 
-func ValidationMessage(fe validator.FieldError) string {
+func ValidationCode(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
-		return fe.Field() + " is required"
+		return "required"
 	case "email":
-		return "Invalid email format"
+		return "invalid_email"
 	case "min":
-		return fe.Field() + " must be at least " + fe.Param() + " characters"
+		return "min_length"
 	}
-	return fe.Field() + " is not valid"
+	return "invalid"
 }

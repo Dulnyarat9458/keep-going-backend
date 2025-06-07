@@ -14,7 +14,7 @@ func HandleBindError(err error) []map[string]string {
 		for _, fe := range ve {
 			out = append(out, map[string]string{
 				"field": ToSnakeCase(fe.Field()),
-				"error": ValidationMessage(fe),
+				"error": ValidationCode(fe),
 			})
 		}
 	} else {
