@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"keep_going/databases"
 	"keep_going/models"
+	"keep_going/utils"
+
 	"keep_going/validators"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 func HabitList(c *gin.Context) {
@@ -38,7 +38,6 @@ func HabitList(c *gin.Context) {
 		"error": "something went wrong",
 	})
 	return
-
 }
 
 func HabitDetail(c *gin.Context) {
@@ -54,15 +53,13 @@ func HabitDetail(c *gin.Context) {
 		habitId := uint(habitIdUint64)
 		user := u.(models.User)
 
-		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID, Model: gorm.Model{
+		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID,
 			ID: habitId,
-		}}).First(&habitTracker)
-
-		fmt.Println(result.Error)
+		}).First(&habitTracker)
 
 		if result.Error != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "something went wrong",
+				"error": "Habit not found",
 			})
 			return
 		}
@@ -78,37 +75,25 @@ func HabitDetail(c *gin.Context) {
 		"error": "something went wrong",
 	})
 	return
-
 }
 
 func AddNewHabit(c *gin.Context) {
 	if u, exists := c.Get("user"); exists {
 		user := u.(models.User)
 		var habitTrackers models.HabitTracker
-		var allErrors []map[string]string
-		err := c.ShouldBindJSON(&habitTrackers)
+		var input validators.AddHabitInput
 
-		if err != nil {
-			allErrors = append(allErrors, map[string]string{
-				"field": "json",
-				"error": err.Error(),
-			})
-			c.JSON(http.StatusBadRequest, allErrors)
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, utils.HandleBindError(err))
 			return
 		}
-
-		inputErrors := validators.ValidateHabitInput(habitTrackers)
 
 		habitTrackers.UserID = user.ID
-		habitTrackers.LastResetDate = habitTrackers.StartDate
+		habitTrackers.Title = input.Title
+		habitTrackers.LastResetDate = *input.StartDate
+		habitTrackers.StartDate = *input.StartDate
+
 		result := databases.DB.Create(&habitTrackers)
-
-		allErrors = append(allErrors, inputErrors...)
-
-		if len(allErrors) > 0 {
-			c.JSON(http.StatusBadRequest, allErrors)
-			return
-		}
 
 		if result.Error != nil {
 			fmt.Println(result.Error)
@@ -131,6 +116,7 @@ func HabitEdit(c *gin.Context) {
 	var habitTracker models.HabitTracker
 	habitIdStr := c.Param("id")
 	habitIdUint64, err := strconv.ParseUint(habitIdStr, 10, 64)
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid habit ID"})
 		return
@@ -140,35 +126,26 @@ func HabitEdit(c *gin.Context) {
 		habitId := uint(habitIdUint64)
 		user := u.(models.User)
 
-		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID, Model: gorm.Model{
-			ID: habitId,
-		}}).First(&habitTracker)
+		result := databases.DB.Where(&models.HabitTracker{
+			UserID: user.ID,
+			ID:     habitId,
+		}).First(&habitTracker)
 
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "habit not found"})
 			return
 		}
 
-		var input struct {
-			Title         *string    `json:"title"`
-			StartDate     *time.Time `json:"start_date"`
-			LastResetDate *time.Time `json:"last_reset_date"`
-		}
+		var input validators.EditHabitOutput
 
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON input"})
+			c.JSON(http.StatusBadRequest, utils.HandleBindError(err))
 			return
 		}
 
-		if input.Title != nil {
-			habitTracker.Title = *input.Title
-		}
-		if input.StartDate != nil {
-			habitTracker.StartDate = *input.StartDate
-		}
-		if input.LastResetDate != nil {
-			habitTracker.LastResetDate = *input.LastResetDate
-		}
+		habitTracker.Title = input.Title
+		habitTracker.StartDate = *input.StartDate
+		habitTracker.LastResetDate = *input.LastResetDate
 
 		databases.DB.Save(&habitTracker)
 
@@ -183,7 +160,6 @@ func HabitEdit(c *gin.Context) {
 		"error": "something went wrong",
 	})
 	return
-
 }
 
 func HabitDelete(c *gin.Context) {
@@ -199,9 +175,9 @@ func HabitDelete(c *gin.Context) {
 		habitId := uint(habitIdUint64)
 		user := u.(models.User)
 
-		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID, Model: gorm.Model{
+		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID,
 			ID: habitId,
-		}}).Delete(&habitTracker)
+		}).Delete(&habitTracker)
 
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "habit not found"})
@@ -219,5 +195,4 @@ func HabitDelete(c *gin.Context) {
 		"error": "something went wrong",
 	})
 	return
-
 }

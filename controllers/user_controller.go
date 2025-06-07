@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"bytes"
-	"errors"
+
 	"fmt"
 	"html/template"
 	"keep_going/databases"
@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
+
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mail.v2"
 )
@@ -27,24 +27,7 @@ func SignIn(c *gin.Context) {
 	var input validators.SignInInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		var ve validator.ValidationErrors
-		var out []map[string]string
-
-		if errors.As(err, &ve) {
-			for _, fe := range ve {
-				out = append(out, map[string]string{
-					"field": utils.ToSnakeCase(fe.Field()),
-					"error": utils.ValidationMessage(fe),
-				})
-			}
-		} else {
-			out = append(out, map[string]string{
-				"field": "json",
-				"error": err.Error(),
-			})
-		}
-
-		c.JSON(http.StatusBadRequest, out)
+		c.JSON(http.StatusBadRequest, utils.HandleBindError(err))
 		return
 	}
 
@@ -98,28 +81,9 @@ func SignUp(c *gin.Context) {
 	var input validators.SignUpInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		var ve validator.ValidationErrors
-		var out []map[string]string
-
-		if errors.As(err, &ve) {
-			for _, fe := range ve {
-				out = append(out, map[string]string{
-					"field": utils.ToSnakeCase(fe.Field()),
-					"error": utils.ValidationMessage(fe),
-				})
-			}
-		} else {
-			out = append(out, map[string]string{
-				"field": "json",
-				"error": err.Error(),
-			})
-		}
-
-		c.JSON(http.StatusBadRequest, out)
+		c.JSON(http.StatusBadRequest, utils.HandleBindError(err))
 		return
 	}
-
-	fmt.Println(input.Password)
 
 	hashedPassword, errHash := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if errHash != nil {
@@ -175,24 +139,7 @@ func ForgetPassword(c *gin.Context) {
 	var resetToken models.ResetToken
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		var ve validator.ValidationErrors
-		var out []map[string]string
-
-		if errors.As(err, &ve) {
-			for _, fe := range ve {
-				out = append(out, map[string]string{
-					"field": utils.ToSnakeCase(fe.Field()),
-					"error": utils.ValidationMessage(fe),
-				})
-			}
-		} else {
-			out = append(out, map[string]string{
-				"field": "json",
-				"error": err.Error(),
-			})
-		}
-
-		c.JSON(http.StatusBadRequest, out)
+		c.JSON(http.StatusBadRequest, utils.HandleBindError(err))
 		return
 	}
 
@@ -237,8 +184,6 @@ func ForgetPassword(c *gin.Context) {
 		ResetLink: fmt.Sprintf("%s/reset?token=%s", frontendWeb, token),
 	}
 
-	fmt.Println(fmt.Sprintf("%s/reset?token=%s", frontendWeb, token))
-
 	var body bytes.Buffer
 	if err := tmpl.Execute(&body, data); err != nil {
 		log.Fatal("Execute template error:", err)
@@ -282,24 +227,7 @@ func ResetPassword(c *gin.Context) {
 	var input validators.ResetPasswordInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		var ve validator.ValidationErrors
-		var out []map[string]string
-
-		if errors.As(err, &ve) {
-			for _, fe := range ve {
-				out = append(out, map[string]string{
-					"field": utils.ToSnakeCase(fe.Field()),
-					"error": utils.ValidationMessage(fe),
-				})
-			}
-		} else {
-			out = append(out, map[string]string{
-				"field": "json",
-				"error": err.Error(),
-			})
-		}
-
-		c.JSON(http.StatusBadRequest, out)
+		c.JSON(http.StatusBadRequest, utils.HandleBindError(err))
 		return
 	}
 
