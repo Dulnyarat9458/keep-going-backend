@@ -24,6 +24,7 @@ func main() {
 	r.GET("/habits", middlewares.Authenticate(), controllers.HabitList)
 	r.GET("/habits/:id", middlewares.Authenticate(), controllers.HabitDetail)
 	r.PATCH("/habits/:id", middlewares.Authenticate(), controllers.HabitEdit)
+	r.POST("/habits/:id/reset", middlewares.Authenticate(), controllers.HabitReset)
 	r.DELETE("/habits/:id", middlewares.Authenticate(), controllers.HabitDelete)
 	r.POST("/habits", middlewares.Authenticate(), controllers.AddNewHabit)
 

@@ -5,6 +5,7 @@ import (
 	"keep_going/databases"
 	"keep_going/models"
 	"keep_going/utils"
+	"time"
 
 	"keep_going/validators"
 	"net/http"
@@ -144,6 +145,47 @@ func HabitEdit(c *gin.Context) {
 		}
 
 		habitTracker.Title = input.Title
+
+		databases.DB.Save(&habitTracker)
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "habit updated",
+			"data":    habitTracker,
+		})
+		return
+
+	}
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": "fail",
+	})
+	return
+}
+
+func HabitReset(c *gin.Context) {
+	var habitTracker models.HabitTracker
+	habitIdStr := c.Param("id")
+	habitIdUint64, err := strconv.ParseUint(habitIdStr, 10, 64)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid habit ID"})
+		return
+	}
+
+	if u, exists := c.Get("user"); exists {
+		habitId := uint(habitIdUint64)
+		user := u.(models.User)
+
+		result := databases.DB.Where(&models.HabitTracker{
+			UserID: user.ID,
+			ID:     habitId,
+		}).First(&habitTracker)
+
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+			return
+		}
+
+		habitTracker.LastResetDate = time.Now()
 
 		databases.DB.Save(&habitTracker)
 
