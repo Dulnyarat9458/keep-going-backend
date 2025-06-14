@@ -144,8 +144,6 @@ func HabitEdit(c *gin.Context) {
 		}
 
 		habitTracker.Title = input.Title
-		habitTracker.StartDate = *input.StartDate
-		habitTracker.LastResetDate = *input.LastResetDate
 
 		databases.DB.Save(&habitTracker)
 
