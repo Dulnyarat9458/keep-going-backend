@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"keep_going/databases"
 	"keep_going/models"
 	"keep_going/utils"
@@ -89,6 +88,11 @@ func AddNewHabit(c *gin.Context) {
 			return
 		}
 
+		if input.StartDate.After(time.Now()) {
+			c.JSON(400, gin.H{"error": "invalid_start_date"})
+			return
+		}
+
 		habitTrackers.UserID = user.ID
 		habitTrackers.Title = input.Title
 		habitTrackers.LastResetDate = *input.StartDate
@@ -97,7 +101,6 @@ func AddNewHabit(c *gin.Context) {
 		result := databases.DB.Create(&habitTrackers)
 
 		if result.Error != nil {
-			fmt.Println(result.Error)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "fail",
 				"field": "non_field",
@@ -119,7 +122,7 @@ func HabitEdit(c *gin.Context) {
 	habitIdUint64, err := strconv.ParseUint(habitIdStr, 10, 64)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid habit ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_id"})
 		return
 	}
 
@@ -167,7 +170,7 @@ func HabitReset(c *gin.Context) {
 	habitIdUint64, err := strconv.ParseUint(habitIdStr, 10, 64)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid habit ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_id"})
 		return
 	}
 
@@ -207,7 +210,7 @@ func HabitDelete(c *gin.Context) {
 	habitIdStr := c.Param("id")
 	habitIdUint64, err := strconv.ParseUint(habitIdStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid habit ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_id"})
 		return
 	}
 
