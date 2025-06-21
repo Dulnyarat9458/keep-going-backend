@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"keep_going/controllers"
 	"keep_going/databases"
 	"keep_going/middlewares"
@@ -25,7 +24,6 @@ func main() {
 	}))
 
 	r.GET("/", func(c *gin.Context) {
-		fmt.Println(os.Getenv("FRONTEND_WEB"))
 		c.JSON(200, gin.H{"message": "Hello from Gin! love"})
 	})
 
