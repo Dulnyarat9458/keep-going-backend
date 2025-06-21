@@ -1,17 +1,31 @@
 package main
 
 import (
+	"fmt"
 	"keep_going/controllers"
 	"keep_going/databases"
 	"keep_going/middlewares"
+	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	databases.ConnectDatabase()
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{os.Getenv("FRONTEND_WEB")},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	r.GET("/", func(c *gin.Context) {
+		fmt.Println(os.Getenv("FRONTEND_WEB"))
 		c.JSON(200, gin.H{"message": "Hello from Gin! love"})
 	})
 
