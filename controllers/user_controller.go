@@ -181,7 +181,7 @@ func ForgetPassword(c *gin.Context) {
 	data := struct {
 		ResetLink string
 	}{
-		ResetLink: fmt.Sprintf("%s/reset?token=%s", frontendWeb, token),
+		ResetLink: fmt.Sprintf("%s/reset-password?token=%s", frontendWeb, token),
 	}
 
 	var body bytes.Buffer
