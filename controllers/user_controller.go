@@ -95,7 +95,8 @@ func SignIn(c *gin.Context) {
 }
 
 func SignOut(c *gin.Context) {
-	c.SetCookie("access_token", "", -1, "/", "", true, true)
+	isDev := os.Getenv("IS_DEV") == "true"
+	c.SetCookie("access_token", "", -1, "/", "", !isDev, true)
 	c.JSON(200, gin.H{"message": "logged out"})
 	return
 }
