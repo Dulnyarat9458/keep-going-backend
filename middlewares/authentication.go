@@ -25,7 +25,7 @@ func Authenticate() gin.HandlerFunc {
 
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "unauthorized:can't authorize access_token",
+				"error": "unauthorized",
 			})
 		}
 

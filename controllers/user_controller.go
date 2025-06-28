@@ -59,20 +59,44 @@ func SignIn(c *gin.Context) {
 		})
 	}
 
-	c.SetCookie(
-		"access_token", // name
-		jwt,            // value
-		3600*24,        // maxAge in seconds (1 day)
-		"/",            // path
-		"",             // domain ("" = current domain)
-		true,           // secure (true = only HTTPS)
-		true,           // httpOnly
-	)
+	isDev := os.Getenv("IS_DEV") == "true"
+
+	cookie := &http.Cookie{
+		Name:     "access_token",
+		Value:    jwt,
+		Path:     "/",
+		MaxAge:   86400,
+		HttpOnly: true,
+		Expires:  time.Now().Add(24 * time.Hour),
+	}
+
+	if isDev {
+		// local dev: อย่าใส่ SameSite=None หรือ Secure
+		cookie.SameSite = http.SameSiteLaxMode
+		cookie.Secure = false
+	} else {
+		// production: ใส่ SameSite=None + Secure
+		cookie.SameSite = http.SameSiteNoneMode
+		cookie.Secure = true
+	}
+
+	http.SetCookie(c.Writer, cookie)
+
+	// c.SetCookie(
+	// 	"access_token", // name
+	// 	jwt,            // value
+	// 	3600*24,        // maxAge in seconds (1 day)
+	// 	"/",            // path
+	// 	"",             // domain ("" = current domain)
+	// 	!isDev,         // secure (true = only HTTPS)
+	// 	true,           // httpOnly
+	// )
 	return
 }
 
 func SignOut(c *gin.Context) {
-	c.SetCookie("access_token", "", -1, "/", "", true, true)
+	isDev := os.Getenv("IS_DEV") == "true"
+	c.SetCookie("access_token", "", -1, "/", "", !isDev, true)
 	c.JSON(200, gin.H{"message": "logged out"})
 	return
 }
@@ -275,8 +299,8 @@ func MyUserInfo(c *gin.Context) {
 			"message": "ok",
 			"data": gin.H{
 				"first_name": user.FirstName,
-				"last_name":  user.FirstName,
-				"email":      user.FirstName,
+				"last_name":  user.LastName,
+				"email":      user.Email,
 			},
 		})
 		return
