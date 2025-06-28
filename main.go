@@ -33,6 +33,8 @@ func main() {
 	r.POST("/forget-password", controllers.ForgetPassword)
 	r.POST("/reset-password", controllers.ResetPassword)
 
+	r.GET("/users/me", middlewares.Authenticate(), controllers.MyUserInfo)
+
 	r.GET("/habits", middlewares.Authenticate(), controllers.HabitList)
 	r.GET("/habits/:id", middlewares.Authenticate(), controllers.HabitDetail)
 	r.PATCH("/habits/:id", middlewares.Authenticate(), controllers.HabitEdit)

@@ -253,6 +253,38 @@ func ResetPassword(c *gin.Context) {
 	databases.DB.Unscoped().Delete(&resetToken)
 	databases.DB.Save(&user)
 
-	c.JSON(200, gin.H{"message": "RESET COMPLETE"})
+	c.JSON(200, gin.H{"message": "ok"})
+	return
+}
+
+func MyUserInfo(c *gin.Context) {
+	var user models.User
+
+	if u, exists := c.Get("user"); exists {
+		fmt.Println(u)
+		result := databases.DB.First(&user, u)
+
+		if result.Error != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "fail",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "ok",
+			"data": gin.H{
+				"first_name": user.FirstName,
+				"last_name":  user.FirstName,
+				"email":      user.FirstName,
+			},
+		})
+		return
+
+	}
+
+	c.JSON(http.StatusBadRequest, gin.H{
+		"error": "fail",
+	})
 	return
 }
