@@ -16,7 +16,7 @@ func Authenticate() gin.HandlerFunc {
 		token, err := c.Cookie("access_token")
 		if err != nil || token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "unauthorized: access_token cookie missing",
+				"error": "unauthorized",
 			})
 			return
 		}
