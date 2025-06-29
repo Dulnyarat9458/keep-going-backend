@@ -19,7 +19,7 @@ func HabitList(c *gin.Context) {
 	if u, exists := c.Get("user"); exists {
 		user := u.(models.User)
 
-		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID}).Find(&habitTrackers)
+		result := databases.DB.Where(&models.HabitTracker{UserID: user.ID}).Order("created_at desc").Find(&habitTrackers)
 
 		if result.Error != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
