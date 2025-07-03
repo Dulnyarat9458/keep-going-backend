@@ -24,7 +24,7 @@ func main() {
 	}))
 
 	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "Hello from Gin! love"})
+		c.JSON(200, gin.H{"message": "Hi! Welcome to Keep Going API!"})
 	})
 
 	r.POST("/signup", controllers.SignUp)
