@@ -71,11 +71,9 @@ func SignIn(c *gin.Context) {
 	}
 
 	if isDev {
-		// local dev: อย่าใส่ SameSite=None หรือ Secure
 		cookie.SameSite = http.SameSiteLaxMode
 		cookie.Secure = false
 	} else {
-		// production: ใส่ SameSite=None + Secure
 		cookie.SameSite = http.SameSiteNoneMode
 		cookie.Secure = true
 	}
